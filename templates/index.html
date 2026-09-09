@@ -2,87 +2,260 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Real-Time Computer Vision & Detection Analytics Dashboard - RF-DETR</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vision Analytics - Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            --bg-color: #0c051a;
+            --card-bg: #160a2c;
+            --card-border: #281545;
+            --accent-cyan: #00f2fe;
+            --accent-pink: #ff007f;
+            --accent-orange: #ff9a00;
+            --accent-purple: #7b2cbf;
+            --text-color: #e0d6f6;
+            --text-dim: #8c7aa9;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Poppins', sans-serif;
+            min-height: 100vh;
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            color: var(--accent-cyan) !important;
+            letter-spacing: 1px;
+        }
+
+        .glass-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .form-control-neon {
+            background-color: #110624;
+            border: 1px solid var(--card-border);
+            color: #fff;
+            border-radius: 10px;
+        }
+
+        .form-control-neon:focus {
+            background-color: #110624;
+            color: #fff;
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 10px rgba(0, 242, 254, 0.3);
+        }
+
+        .btn-neon-start {
+            background: linear-gradient(45deg, #7b2cbf, #ff007f);
+            border: none;
+            color: white;
+            font-weight: 600;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-neon-start:hover {
+            box-shadow: 0 0 15px rgba(255, 0, 127, 0.5);
+            color: white;
+        }
+
+        .btn-neon-stop {
+            background: #281545;
+            border: 1px solid #ff007f;
+            color: #ff007f;
+            font-weight: 600;
+            border-radius: 10px;
+        }
+
+        /* Indicadores KPI Neón */
+        .stat-widget {
+            padding: 15px;
+            border-radius: 12px;
+            background: rgba(17, 6, 36, 0.6);
+            border-left: 4px solid var(--card-border);
+        }
+
+        .stat-widget.cyan { border-left-color: var(--accent-cyan); }
+        .stat-widget.pink { border-left-color: var(--accent-pink); }
+        .stat-widget.orange { border-left-color: var(--accent-orange); }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .text-cyan { color: var(--accent-cyan); }
+        .text-pink { color: var(--accent-pink); }
+        .text-orange { color: var(--accent-orange); }
+        .text-dim { color: var(--text-dim); }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #000;
+            border: 1px solid var(--card-border);
+        }
+
+        .video-container img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+    </style>
 </head>
-<body class="bg-dark text-light">
-    <div class="container my-4">
-        <h2 class="mb-4 text-center">Real-Time Computer Vision & Detection Analytics Dashboard</h2>
+<body class="p-4">
 
-        <!-- Panel de Control e Input -->
-        <div class="card bg-secondary text-white mb-4">
-            <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-md-8">
-                        <input type="text" id="streamSource" class="form-control" placeholder="Ruta de vídeo/imagen, URL RTSP o '0' para Webcam">
-                    </div>
-                    <div class="col-md-2">
-                        <button onclick="startStream()" class="btn btn-success w-100">Iniciar Stream</button>
-                    </div>
-                    <div class="col-md-2">
-                        <button onclick="stopStream()" class="btn btn-danger w-100">Detener</button>
-                    </div>
+    <div class="container-fluid">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="navbar-brand m-0">🛰️ VISION ANALYTICS <span class="fs-6 text-dim">| DETR GPU DASHBOARD</span></h3>
+        </div>
+
+        <!-- Panel de Entrada -->
+        <div class="glass-card p-3 mb-4">
+            <div class="row g-3">
+                <div class="col-md-8">
+                    <input type="text" id="streamSource" class="form-control form-control-neon" 
+                           placeholder="Cam Local ('0'), Stream .m3u8, RTSP o Ruta de Video/Imagen">
+                </div>
+                <div class="col-md-2">
+                    <button onclick="startStream()" class="btn btn-neon-start w-100 py-2">Iniciar Stream</button>
+                </div>
+                <div class="col-md-2">
+                    <button onclick="stopStream()" class="btn btn-neon-stop w-100 py-2">Detener</button>
                 </div>
             </div>
         </div>
 
-        <div class="row mb-4">
-            <!-- Reproductor de Video -->
-            <div class="col-lg-8">
-                <div class="card bg-secondary text-center p-2">
-                    <img id="videoFeed" src="/video_feed" class="img-fluid rounded" alt="Sin flujo de video activo">
+        <!-- Secciones Estadísticas Superiores -->
+        <div class="row g-3 mb-4">
+            <!-- Columna Vídeo Real-Time -->
+            <div class="col-xl-7 col-lg-6">
+                <div class="glass-card p-3 h-100">
+                    <div class="video-container">
+                        <img id="videoFeed" src="/video_feed" alt="Video Feed">
+                    </div>
                 </div>
             </div>
 
-            <!-- Métricas Actuales en Tiempo Real -->
-            <div class="col-lg-4">
-                <div class="card bg-secondary text-white h-100">
-                    <div class="card-header fw-bold">Conteo Actual</div>
-                    <div class="card-body d-flex flex-column justify-content-around">
-                        <div class="p-3 bg-dark rounded">
-                            <h5>Personas: <span id="countPersons" class="badge bg-primary fs-4">0</span></h5>
-                        </div>
-                        <div class="p-3 bg-dark rounded">
-                            <h5>Vehículos: <span id="countVehicles" class="badge bg-warning text-dark fs-4">0</span></h5>
-                        </div>
-                        <div class="p-3 bg-dark rounded">
-                            <h5>Animales: <span id="countAnimals" class="badge bg-info text-dark fs-4">0</span></h5>
+            <!-- Columna Métricas Acumuladas -->
+            <div class="col-xl-5 col-lg-6">
+                <div class="glass-card p-4 h-100 d-flex flex-column justify-content-between">
+                    <h5 class="fw-bold mb-3 text-dim">MÉTRICAS DETALLADAS</h5>
+
+                    <!-- Personas -->
+                    <div class="stat-widget cyan mb-3">
+                        <span class="text-dim small fw-semibold">PERSONAS</span>
+                        <div class="d-flex justify-content-between align-items-end mt-1">
+                            <div><span class="small text-dim">Ahora:</span> <span id="p_curr" class="stat-value text-cyan">0</span></div>
+                            <div><span class="small text-dim">Última Hora:</span> <span id="p_hour" class="fw-bold text-light">0</span></div>
+                            <div><span class="small text-dim">Total:</span> <span id="p_total" class="fw-bold text-light">0</span></div>
                         </div>
                     </div>
+
+                    <!-- Vehículos -->
+                    <div class="stat-widget pink mb-3">
+                        <span class="text-dim small fw-semibold">VEHÍCULOS</span>
+                        <div class="d-flex justify-content-between align-items-end mt-1">
+                            <div><span class="small text-dim">Ahora:</span> <span id="v_curr" class="stat-value text-pink">0</span></div>
+                            <div><span class="small text-dim">Última Hora:</span> <span id="v_hour" class="fw-bold text-light">0</span></div>
+                            <div><span class="small text-dim">Total:</span> <span id="v_total" class="fw-bold text-light">0</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Animales -->
+                    <div class="stat-widget orange">
+                        <span class="text-dim small fw-semibold">ANIMALES</span>
+                        <div class="d-flex justify-content-between align-items-end mt-1">
+                            <div><span class="small text-dim">Ahora:</span> <span id="a_curr" class="stat-value text-orange">0</span></div>
+                            <div><span class="small text-dim">Última Hora:</span> <span id="a_hour" class="fw-bold text-light">0</span></div>
+                            <div><span class="small text-dim">Total:</span> <span id="a_total" class="fw-bold text-light">0</span></div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>
 
-        <!-- Gráfica Histórica -->
-        <div class="card bg-secondary text-white">
-            <div class="card-header fw-bold">Detecciones Promedio por Minuto (Última Hora)</div>
-            <div class="card-body">
-                <canvas id="metricsChart" height="100"></canvas>
+        <!-- Gráfica Synthwave -->
+        <div class="glass-card p-4">
+            <h5 class="fw-bold mb-3 text-dim">TENDENCIA TEMPORAL DE DETECCIONES (PROMEDIO / MINUTO)</h5>
+            <div style="height: 280px;">
+                <canvas id="metricsChart"></canvas>
             </div>
         </div>
     </div>
 
     <script>
-        // Inicialización de Chart.js
+        // Configuración Gráfica Estilo Synthwave / Neon
         const ctx = document.getElementById('metricsChart').getContext('2d');
+        
+        // Degradados
+        const gradCyan = ctx.createLinearGradient(0, 0, 0, 300);
+        gradCyan.addColorStop(0, 'rgba(0, 242, 254, 0.4)');
+        gradCyan.addColorStop(1, 'rgba(0, 242, 254, 0.0)');
+
+        const gradPink = ctx.createLinearGradient(0, 0, 0, 300);
+        gradPink.addColorStop(0, 'rgba(255, 0, 127, 0.4)');
+        gradPink.addColorStop(1, 'rgba(255, 0, 127, 0.0)');
+
         const metricsChart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: [],
                 datasets: [
-                    { label: 'Personas', data: [], borderColor: '#0d6efd', tension: 0.3, fill: false },
-                    { label: 'Vehículos', data: [], borderColor: '#ffc107', tension: 0.3, fill: false },
-                    { label: 'Animales', data: [], borderColor: '#0dcaf0', tension: 0.3, fill: false }
+                    {
+                        label: 'Personas',
+                        data: [],
+                        borderColor: '#00f2fe',
+                        backgroundColor: gradCyan,
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 3,
+                        pointRadius: 0
+                    },
+                    {
+                        label: 'Vehículos',
+                        data: [],
+                        borderColor: '#ff007f',
+                        backgroundColor: gradPink,
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 3,
+                        pointRadius: 0
+                    }
                 ]
             },
             options: {
                 responsive: true,
-                scales: {
-                    x: { ticks: { color: '#ffffff' } },
-                    y: { ticks: { color: '#ffffff' }, beginAtZero: true }
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { labels: { color: '#8c7aa9', font: { family: 'Poppins' } } }
                 },
-                plugins: { legend: { labels: { color: '#ffffff' } } }
+                scales: {
+                    x: {
+                        grid: { color: 'rgba(40, 21, 69, 0.5)' },
+                        ticks: { color: '#8c7aa9' }
+                    },
+                    y: {
+                        grid: { color: 'rgba(40, 21, 69, 0.5)' },
+                        ticks: { color: '#8c7aa9' },
+                        beginAtZero: true
+                    }
+                }
             }
         });
 
@@ -104,16 +277,23 @@
             fetch('/api/metrics')
                 .then(res => res.json())
                 .then(data => {
-                    // Actualizar contadores numéricos
-                    document.getElementById('countPersons').innerText = data.current.persons;
-                    document.getElementById('countVehicles').innerText = data.current.vehicles;
-                    document.getElementById('countAnimals').innerText = data.current.animals;
+                    // Actualizar contadores por categoría
+                    document.getElementById('p_curr').innerText = data.current.persons;
+                    document.getElementById('p_hour').innerText = data.last_hour.persons;
+                    document.getElementById('p_total').innerText = data.total_all.persons;
+
+                    document.getElementById('v_curr').innerText = data.current.vehicles;
+                    document.getElementById('v_hour').innerText = data.last_hour.vehicles;
+                    document.getElementById('v_total').innerText = data.total_all.vehicles;
+
+                    document.getElementById('a_curr').innerText = data.current.animals;
+                    document.getElementById('a_hour').innerText = data.last_hour.animals;
+                    document.getElementById('a_total').innerText = data.total_all.animals;
 
                     // Actualizar gráfico
                     metricsChart.data.labels = data.history.labels;
                     metricsChart.data.datasets[0].data = data.history.persons;
                     metricsChart.data.datasets[1].data = data.history.vehicles;
-                    metricsChart.data.datasets[2].data = data.history.animals;
                     metricsChart.update();
                 });
         }, 2000);
